@@ -44,10 +44,12 @@ export const login = async (req, res) => {
     const { email, password } = req.body;
     const user = await User.findOne({ email: email });
 
-    if (!user) return res.status(400).json({ msg: "User does not exists. " });
+    if (!user)
+      return res.status(404).json({ message: "User does not exists. " });
 
     const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) return res.status(400).json({ msg: "Unvalid credentials." });
+    if (!isMatch)
+      return res.status(400).json({ message: "Unvalid credentials." });
 
     const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET);
 
@@ -64,6 +66,10 @@ export const refresh = async (req, res) => {
     const { id } = req.user;
 
     const user = await User.findById(id);
+
+    if (!user) {
+      throw new Error("not found user with this id");
+    }
 
     res.status(200).json({ user });
   } catch (err) {
