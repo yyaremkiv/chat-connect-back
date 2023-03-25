@@ -5,13 +5,13 @@ const UserSchema = new mongoose.Schema(
     firstName: {
       type: String,
       required: true,
-      min: 2,
+      min: 3,
       max: 50,
     },
     lastName: {
       type: String,
       required: true,
-      min: 2,
+      min: 3,
       max: 50,
     },
     email: {
@@ -24,6 +24,7 @@ const UserSchema = new mongoose.Schema(
       type: String,
       required: true,
       min: 5,
+      max: 20,
     },
     twitter: {
       type: String,
@@ -43,8 +44,14 @@ const UserSchema = new mongoose.Schema(
       type: Array,
       default: [],
     },
-    location: String,
-    occupation: String,
+    location: {
+      type: String,
+      max: 50,
+    },
+    occupation: {
+      type: String,
+      max: 50,
+    },
     viewedProfile: Number,
     impressions: Number,
   },
