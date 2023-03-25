@@ -1,6 +1,7 @@
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import User from "../models/User.js";
+import { storage } from "../index.js";
 
 // export const register = async (req, res) => {
 //   try {
@@ -40,7 +41,6 @@ import User from "../models/User.js";
 
 export const login = async (req, res) => {
   try {
-    console.logсв;
     const { email, password } = req.body;
     const user = await User.findOne({ email: email });
 
@@ -72,6 +72,42 @@ export const refresh = async (req, res) => {
     }
 
     res.status(200).json({ user });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+export const update = async (req, res) => {
+  try {
+    const { id } = req.user;
+    let user = await User.findById(id);
+
+    if (!user) {
+      throw new Error("not found user with this id");
+    }
+
+    const bucketName = "chat-connect";
+    const fileName = `${Date.now()}-${req.file.originalname}`;
+    const bucket = storage.bucket(bucketName);
+    const file = bucket.file(fileName);
+    const stream = file.createWriteStream({
+      metadata: {
+        contentType: req.file.mimetype,
+      },
+    });
+    stream.on("error", (err) => {
+      res.status(500).json({ message: err.message });
+    });
+    stream.on("finish", async () => {
+      const publicUrl = `https://storage.cloud.google.com/${bucketName}/${fileName}`;
+      console.log("this is id", publicUrl);
+
+      await User.findByIdAndUpdate(id, { picturePath: publicUrl });
+      console.log("working");
+      const updateUser = await User.find({});
+      res.status(201).json(updateUser);
+    });
+    stream.end(req.file.buffer);
   } catch (err) {
     res.status(500).json({ message: err.message });
   }

@@ -25,6 +25,12 @@ const UserSchema = new mongoose.Schema(
       required: true,
       min: 5,
     },
+    twitter: {
+      type: String,
+    },
+    linkedin: {
+      type: String,
+    },
     token: {
       type: String,
       default: null,

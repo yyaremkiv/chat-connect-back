@@ -36,12 +36,12 @@ app.use(cors());
 
 // const credentials = process.env.GOOGLE_APPLICATION_CREDENTIALS;
 
-const storage = new Storage({
+export const storage = new Storage({
   projectId: "your-project-id",
   keyFilename: path.resolve("./gcp.json"),
 });
 
-const upload = multer({ storage: multer.memoryStorage() });
+export const upload = multer({ storage: multer.memoryStorage() });
 
 app.post("/auth/register", upload.single("picture"), register);
 app.post("/posts", verifyToken, upload.single("picture"), createPost);
@@ -49,10 +49,8 @@ app.post("/posts", verifyToken, upload.single("picture"), createPost);
 async function createPost(req, res) {
   try {
     if (req.file) {
-      console.log("this 1 console");
       const bucketName = "chat-connect";
       const fileName = `${Date.now()}-${req.file.originalname}`;
-      console.log("this 2 console", fileName);
       const bucket = storage.bucket(bucketName);
       const file = bucket.file(fileName);
       const stream = file.createWriteStream({
@@ -61,7 +59,6 @@ async function createPost(req, res) {
         },
       });
       stream.on("error", (err) => {
-        console.log("this 3 console", err.message);
         res.status(500).json({ message: err.message });
       });
       stream.on("finish", async () => {
