@@ -1,58 +1,25 @@
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import User from "../models/User.js";
-import { storage } from "../index.js";
-
-// export const register = async (req, res) => {
-//   try {
-//     const {
-//       firstName,
-//       lastName,
-//       email,
-//       password,
-//       picturePath,
-//       friends,
-//       location,
-//       occupation,
-//     } = req.body;
-
-//     const salt = await bcrypt.genSalt();
-//     const passwordHash = await bcrypt.hash(password, salt);
-
-//     const newUser = new User({
-//       firstName,
-//       lastName,
-//       email,
-//       password: passwordHash,
-//       picturePath,
-//       friends,
-//       location,
-//       occupation,
-//       viewedProfile: Math.floor(Math.random() * 10000),
-//       impressions: Math.floor(Math.random() * 10000),
-//     });
-
-//     const savedUser = await newUser.save();
-//     res.status(201).json({ message: "Succes" });
-//   } catch (err) {
-//     res.status(500).json({ message: err.message });
-//   }
-// };
+import cloudConfig from "../config/cloudConfig.js";
 
 export const login = async (req, res) => {
   try {
     const { email, password } = req.body;
-    const user = await User.findOne({ email: email });
+    const user = await User.findOne({ email });
 
     if (!user)
-      return res.status(404).json({ message: "User does not exists. " });
+      return res
+        .status(401)
+        .json({ message: "Your email address or password is incorrect." });
 
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch)
-      return res.status(400).json({ message: "Unvalid credentials." });
+    const isMatchPassword = await bcrypt.compare(password, user.password);
+    if (!isMatchPassword)
+      return res
+        .status(401)
+        .json({ message: "Your email address or password is incorrect." });
 
     const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET);
-
     await User.findByIdAndUpdate(user._id, { token });
 
     res.status(200).json({ token });
@@ -64,8 +31,7 @@ export const login = async (req, res) => {
 export const refresh = async (req, res) => {
   try {
     const { id } = req.user;
-
-    const user = await User.findById(id);
+    const user = await User.findById(id).select("-password -token -__v");
 
     if (!user) {
       throw new Error("not found user with this id");
@@ -80,34 +46,32 @@ export const refresh = async (req, res) => {
 export const update = async (req, res) => {
   try {
     const { id } = req.user;
+    const {
+      firstName,
+      lastName,
+      email,
+      location,
+      occupation,
+      twitter,
+      linkendin,
+    } = req.body;
     let user = await User.findById(id);
 
     if (!user) {
-      throw new Error("not found user with this id");
+      throw new Error("Not found user with this id");
     }
 
-    const bucketName = "chat-connect";
-    const fileName = `${Date.now()}-${req.file.originalname}`;
-    const bucket = storage.bucket(bucketName);
-    const file = bucket.file(fileName);
-    const stream = file.createWriteStream({
-      metadata: {
-        contentType: req.file.mimetype,
-      },
+    await User.findByIdAndUpdate(id, {
+      firstName,
+      lastName,
+      email,
+      location,
+      occupation,
+      twitter,
+      linkendin,
     });
-    stream.on("error", (err) => {
-      res.status(500).json({ message: err.message });
-    });
-    stream.on("finish", async () => {
-      const publicUrl = `https://storage.cloud.google.com/${bucketName}/${fileName}`;
-      console.log("this is id", publicUrl);
-
-      await User.findByIdAndUpdate(id, { picturePath: publicUrl });
-      console.log("working");
-      const updateUser = await User.find({});
-      res.status(201).json(updateUser);
-    });
-    stream.end(req.file.buffer);
+    const updateUser = await User.find({}).select("-password -token -__v");
+    res.status(201).json(updateUser);
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -127,6 +91,27 @@ export const logout = async (req, res) => {
     await User.findByIdAndUpdate(id, { token: null });
 
     res.status(201).json({ messag: "Succes" });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+export const deleteAvatar = async (req, res) => {
+  try {
+    const { id } = req.user;
+    const user = User.findById(id);
+
+    if (!user) {
+      res.status(404).json({ message: "User does not exists" });
+      return;
+    }
+
+    await User.findByIdAndUpdate(id, {
+      picturePath: cloudConfig.imagePathDefault,
+    });
+
+    const updateUser = await User.find({}).select("-password -token -__v");
+    res.status(201).json(updateUser);
   } catch (err) {
     res.status(500).json({ message: err.message });
   }

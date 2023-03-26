@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import cloudConfig from "../config/cloudConfig.js";
 
 const UserSchema = new mongoose.Schema(
   {
@@ -17,20 +18,44 @@ const UserSchema = new mongoose.Schema(
     email: {
       type: String,
       required: true,
+      min: 4,
       max: 50,
       unique: true,
+      validate: {
+        validator: async function (v) {
+          const user = await this.constructor.findOne({ email: v });
+          if (user && !user._id.equals(this._id)) {
+            throw new Error("Email address must be unique");
+          }
+        },
+        message: "Email address must be unique",
+      },
     },
     password: {
       type: String,
       required: true,
-      min: 5,
+      min: 6,
       max: 20,
+    },
+    location: {
+      type: String,
+      max: 50,
+      default: "",
+    },
+    occupation: {
+      type: String,
+      max: 50,
+      default: "",
     },
     twitter: {
       type: String,
+      max: 50,
+      default: "",
     },
-    linkedin: {
+    linkendin: {
       type: String,
+      max: 50,
+      default: "",
     },
     token: {
       type: String,
@@ -38,19 +63,11 @@ const UserSchema = new mongoose.Schema(
     },
     picturePath: {
       type: String,
-      default: "",
+      default: cloudConfig.imagePathDefault,
     },
     friends: {
       type: Array,
       default: [],
-    },
-    location: {
-      type: String,
-      max: 50,
-    },
-    occupation: {
-      type: String,
-      max: 50,
     },
     viewedProfile: Number,
     impressions: Number,
