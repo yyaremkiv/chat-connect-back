@@ -9,8 +9,9 @@ import {
   update,
   deleteAvatar,
 } from "../controllers/auth.js";
-import { addFileCloud, updateFileCloud } from "../services/cloud/cloud.js";
+import { addFileCloud, deleteFileCloud } from "../services/cloud/cloud.js";
 import { verifyToken } from "../middleware/auth.js";
+import cloudConfig from "../config/cloudConfig.js";
 
 const router = express.Router();
 const upload = multer({ storage: multer.memoryStorage() });
@@ -88,8 +89,13 @@ async function updateAvatar(req, res) {
       return;
     }
 
-    console.log("new console.log", user.picturePath);
-    await updateFileCloud(user.picturePath, req.file);
+    if (user.picturePath !== cloudConfig.publicImagePathDefault) {
+      await deleteFileCloud(user.picturePath);
+    }
+
+    const publicUrl = await addFileCloud(req.file);
+
+    await User.findByIdAndUpdate(id, { picturePath: publicUrl });
 
     const updateUser = await User.find({}).select("-password -token -__v");
     res.status(201).json(updateUser);

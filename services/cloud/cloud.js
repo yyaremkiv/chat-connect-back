@@ -10,19 +10,12 @@ export const addFileCloud = async (respFile) => {
       contentType: respFile.mimetype,
     },
   });
-  const publicUrl = cloudConfig.imagePath(bucketName, fileName);
+  const publicUrl = cloudConfig.publicImagePath(bucketName, fileName);
   return publicUrl;
 };
 
-export const updateFileCloud = async (fileName, respFile) => {
-  const file = storage.bucket(bucketName).file(fileName);
+export const deleteFileCloud = async (fileName) => {
+  const fileCloudName = cloudConfig.publicToPrivatePath(fileName);
+  const file = storage.bucket(bucketName).file(fileCloudName);
   await file.delete();
-  await file.save(respFile.buffer, {
-    metadata: {
-      contentType: respFile.mimetype,
-    },
-    resumable: false,
-  });
-  const publicUrl = cloudConfig.imagePath(bucketName, fileName);
-  return publicUrl;
 };

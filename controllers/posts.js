@@ -1,5 +1,6 @@
 import Post from "../models/Post.js";
 import User from "../models/User.js";
+import { deleteFileCloud } from "../services/cloud/cloud.js";
 
 // export const createPost = async (req, res) => {
 //   try {
@@ -135,7 +136,9 @@ export const deleteComment = async (req, res) => {
 export const deletePost = async (req, res) => {
   try {
     const { id } = req.params;
+    const post = await Post.findById(id);
 
+    await deleteFileCloud(post.picturePath);
     await Post.findByIdAndDelete(id);
     const posts = await Post.find().sort({ createdAt: "desc" });
 
