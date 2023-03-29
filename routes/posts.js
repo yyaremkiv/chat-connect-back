@@ -43,12 +43,8 @@ async function createPost(req, res) {
       const publicUrl = await addFileCloud(req.file);
 
       const newPost = new Post({
-        userId,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        location: user.location,
+        author: user._id,
         description,
-        userPicturePath: user.picturePath,
         picturePath: publicUrl,
         likes: {},
         comments: [],
@@ -56,12 +52,8 @@ async function createPost(req, res) {
       await newPost.save();
     } else {
       const newPost = new Post({
-        userId,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        location: user.location,
+        author: user._id,
         description,
-        userPicturePath: user.picturePath,
         picturePath: "",
         likes: {},
         comments: [],
@@ -69,7 +61,9 @@ async function createPost(req, res) {
       await newPost.save();
     }
 
-    const posts = await Post.find().sort({ createdAt: "desc" });
+    const posts = await Post.find()
+      .populate("author", "firstName lastName location occupation picturePath")
+      .sort({ createdAt: "desc" });
     res.status(201).json(posts);
   } catch (err) {
     res.status(409).json({ message: err.message });

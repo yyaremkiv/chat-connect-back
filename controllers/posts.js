@@ -28,7 +28,14 @@ import { deleteFileCloud } from "../services/cloud/cloud.js";
 
 export const getFeedPosts = async (req, res) => {
   try {
-    const post = await Post.find().sort({ createdAt: "desc" });
+    const post = await Post.find()
+      .populate("author", "firstName lastName location occupation picturePath")
+      .populate({
+        path: "comments.author",
+        model: "User",
+        select: "firstName lastName location occupation picturePath",
+      })
+      .sort({ createdAt: "desc" });
     res.status(200).json(post);
   } catch (err) {
     res.status(404).json({ message: err.message });
@@ -58,13 +65,20 @@ export const likePost = async (req, res) => {
       post.likes.set(userId, true);
     }
 
-    const updatedPost = await Post.findByIdAndUpdate(
+    const posts = await Post.findByIdAndUpdate(
       id,
       { likes: post.likes },
       { new: true }
-    );
+    )
+      .populate("author", "firstName lastName location occupation picturePath")
+      .populate({
+        path: "comments.author",
+        model: "User",
+        select: "firstName lastName location occupation picturePath",
+      })
+      .sort({ createdAt: "desc" });
 
-    res.status(200).json(updatedPost);
+    res.status(201).json(posts);
   } catch (err) {
     res.status(404).json({ message: err.message });
   }
@@ -80,20 +94,23 @@ export const addComment = async (req, res) => {
     const user = await User.findById(userId);
 
     const comment = {
-      userId,
-      firstName: user.firstName,
-      lastName: user.lastName,
-      picturePath: user.picturePath,
-      create: new Date(),
+      author: user._id,
+      created: new Date(),
       text,
     };
-    console.log("console", user);
 
     const updatePost = await Post.findByIdAndUpdate(id, {
       comments: [...post.comments, comment],
     });
 
-    const updatedPosts = await Post.find().sort({ createdAt: "desc" });
+    const updatedPosts = await Post.find()
+      .populate("author", "firstName lastName location occupation picturePath")
+      .populate({
+        path: "comments.author",
+        model: "User",
+        select: "firstName lastName location occupation picturePath",
+      })
+      .sort({ createdAt: "desc" });
 
     res.status(200).json(updatedPosts);
   } catch (err) {
@@ -125,7 +142,14 @@ export const deleteComment = async (req, res) => {
       comments: newComments,
     });
 
-    const updatedPosts = await Post.find().sort({ createdAt: "desc" });
+    const updatedPosts = await Post.find()
+      .populate("author", "firstName lastName location occupation picturePath")
+      .populate({
+        path: "comments.author",
+        model: "User",
+        select: "firstName lastName location occupation picturePath",
+      })
+      .sort({ createdAt: "desc" });
 
     res.status(200).json(updatedPosts);
   } catch (err) {
@@ -138,9 +162,20 @@ export const deletePost = async (req, res) => {
     const { id } = req.params;
     const post = await Post.findById(id);
 
-    await deleteFileCloud(post.picturePath);
+    if (post.picturePath) {
+      await deleteFileCloud(post.picturePath);
+    }
+
     await Post.findByIdAndDelete(id);
-    const posts = await Post.find().sort({ createdAt: "desc" });
+
+    const posts = await Post.find()
+      .populate("author", "firstName lastName location occupation picturePath")
+      .populate({
+        path: "comments.author",
+        model: "User",
+        select: "firstName lastName location occupation picturePath",
+      })
+      .sort({ createdAt: "desc" });
 
     res.status(200).json(posts);
   } catch (err) {

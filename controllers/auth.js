@@ -1,7 +1,14 @@
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import User from "../models/User.js";
+import Friend from "../models/Friend.js";
 import cloudConfig from "../config/cloudConfig.js";
+
+// import { sendEmailSanGrid } from "../helpers/sendEmail.js";
+
+import dotenv from "dotenv";
+import sgMail from "@sendgrid/mail";
+dotenv.config();
 
 export const login = async (req, res) => {
   try {
@@ -21,6 +28,10 @@ export const login = async (req, res) => {
 
     const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET);
     await User.findByIdAndUpdate(user._id, { token });
+    const newUser = new Friend({
+      userId: user._id,
+    });
+    await newUser.save();
 
     res.status(200).json({ token });
   } catch (err) {
@@ -112,6 +123,36 @@ export const deleteAvatar = async (req, res) => {
 
     const updateUser = await User.find({}).select("-password -token -__v");
     res.status(201).json(updateUser);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+export const sendEmail = async (req, res) => {
+  try {
+    const { email } = req.body;
+    sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+
+    console.log("this is console api", process.env.SENDGRID_API_KEY);
+
+    const msg = {
+      to: "y.yaremkiv@gmail.com", // Change to your recipient
+      from: "test@example.com", // Change to your verified sender
+      subject: "Sending with SendGrid is Fun",
+      text: "and easy to do anywhere, even with Node.js",
+      html: "<strong>and easy to do anywhere, even with Node.js</strong>",
+    };
+
+    await sgMail
+      .send(msg)
+      .then(() => {
+        console.log("Email sent");
+      })
+      .catch((error) => {
+        console.error("this is error console.log on error", error);
+      });
+
+    res.status(200).json({ message: "Succes" });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }

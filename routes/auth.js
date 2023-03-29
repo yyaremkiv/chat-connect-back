@@ -1,6 +1,7 @@
 import express from "express";
 import multer from "multer";
 import User from "../models/User.js";
+import Friend from "../models/Friend.js";
 import bcrypt from "bcrypt";
 import {
   login,
@@ -8,6 +9,7 @@ import {
   logout,
   update,
   deleteAvatar,
+  sendEmail,
 } from "../controllers/auth.js";
 import { addFileCloud, deleteFileCloud } from "../services/cloud/cloud.js";
 import { verifyToken } from "../middleware/auth.js";
@@ -18,6 +20,8 @@ const upload = multer({ storage: multer.memoryStorage() });
 
 router.post("/register", upload.single("picture"), register);
 router.patch("/avatar", verifyToken, upload.single("picture"), updateAvatar);
+
+router.patch("/send", sendEmail);
 
 router.get("/refresh", verifyToken, refresh);
 router.get("/logout", verifyToken, logout);
@@ -64,6 +68,7 @@ async function register(req, res) {
         lastName,
         email,
         password: passwordHash,
+        picturePath: cloudConfig.imagePathDefault,
         friends,
         location,
         occupation,
@@ -72,6 +77,7 @@ async function register(req, res) {
       });
 
       await newUser.save();
+
       res.status(201).json({ message: "New user successfully created!" });
     }
   } catch (err) {
