@@ -1,7 +1,7 @@
 import express from "express";
 import multer from "multer";
 import {
-  getFeedPosts,
+  getPosts,
   getUserPosts,
   likePost,
   deletePost,
@@ -16,18 +16,13 @@ import Post from "../models/Post.js";
 const router = express.Router();
 const upload = multer({ storage: multer.memoryStorage() });
 
-router.post("/", verifyToken, upload.single("picture"), createPost);
-router.get("/", verifyToken, getFeedPosts);
+router.get("/", verifyToken, getPosts);
 
-//Routes for authorization:
+router.post("/", verifyToken, upload.single("picture"), createPost);
 router.get("/:userId/posts", verifyToken, getUserPosts);
 router.patch("/:id/like", verifyToken, likePost);
-
-// Routes for comment:
 router.patch("/:id/comment", verifyToken, addComment);
 router.patch("/:id/comment/delete", verifyToken, deleteComment);
-
-//Routes for posts:
 router.delete("/:id/delete", verifyToken, deletePost);
 
 async function createPost(req, res) {

@@ -1,42 +1,17 @@
-import Post from "../models/Post.js";
 import User from "../models/User.js";
+import Post from "../models/Post.js";
 import { deleteFileCloud } from "../services/cloud/cloud.js";
+import { listPosts } from "../services/postsService.js";
 
-// export const createPost = async (req, res) => {
-//   try {
-//     const { userId, description, picturePath } = req.body;
-//     const user = await User.findById(userId);
-//     const newPost = new Post({
-//       userId,
-//       firstName: user.firstName,
-//       lastName: user.lastName,
-//       location: user.location,
-//       description,
-//       userPicturePath: user.picturePath,
-//       picturePath,
-//       likes: {},
-//       comments: [],
-//     });
-//     await newPost.save();
-
-//     const post = await Post.find().sort({ createdAt: "desc" });
-//     res.status(201).json(post);
-//   } catch (err) {
-//     res.status(409).json({ message: err.message });
-//   }
-// };
-
-export const getFeedPosts = async (req, res) => {
+export const getPosts = async (req, res) => {
   try {
-    const post = await Post.find()
-      .populate("author", "firstName lastName location occupation picturePath")
-      .populate({
-        path: "comments.author",
-        model: "User",
-        select: "firstName lastName location occupation picturePath",
-      })
-      .sort({ createdAt: "desc" });
-    res.status(200).json(post);
+    let { page = 1, limit = 10, sort = "desc" } = req.query;
+    const skip = parseInt((page - 1) * limit);
+    limit = parseInt(limit) > 10 || parseInt(limit) < 0 ? 10 : parseInt(limit);
+
+    const { posts, totalCounts } = await listPosts({ skip, limit, sort });
+
+    res.status(200).json({ posts, totalCounts });
   } catch (err) {
     res.status(404).json({ message: err.message });
   }
@@ -45,7 +20,18 @@ export const getFeedPosts = async (req, res) => {
 export const getUserPosts = async (req, res) => {
   try {
     const { userId } = req.params;
-    const post = await Post.find({ userId });
+
+    const post = await Post.find({ author: userId })
+      .populate("author", "firstName lastName location occupation picturePath")
+      .populate({
+        path: "comments.author",
+        model: "User",
+        select: "firstName lastName location occupation picturePath",
+      })
+      .sort({ createdAt: "desc" });
+
+    console.log("tester", post);
+
     res.status(200).json(post);
   } catch (err) {
     res.status(404).json({ message: err.message });

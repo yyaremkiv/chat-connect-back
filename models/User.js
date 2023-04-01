@@ -1,5 +1,4 @@
 import mongoose from "mongoose";
-import cloudConfig from "../config/cloudConfig.js";
 
 const UserSchema = new mongoose.Schema(
   {
@@ -63,11 +62,12 @@ const UserSchema = new mongoose.Schema(
     },
     picturePath: {
       type: String,
-      default: cloudConfig.imagePathDefault,
+      default:
+        "https://storage.cloud.google.com/chat-connect/no-user-image.jpg",
     },
     friends: {
-      type: Array,
-      default: [],
+      type: String,
+      default: 0,
     },
     viewedProfile: Number,
     impressions: Number,
