@@ -19,7 +19,6 @@ export const verifyToken = async (req, res, next) => {
 
     if (token !== user.token) {
       throw new Error("Not found token");
-      // return res.status(500).json({ message: "Not found token" });
     }
 
     req.user = verified;

@@ -1,104 +1,88 @@
 import User from "../models/User.js";
 import Post from "../models/Post.js";
-import { deleteFileCloud } from "../services/cloud/cloud.js";
-import { listPosts } from "../services/postsService.js";
+import { addFileCloud } from "../services/cloud/cloud.js";
+import {
+  listPosts,
+  addNewPost,
+  deleteOnePost,
+  patchLikePost,
+  addCommentPost,
+  deleteCommentPost,
+} from "../services/postsService.js";
 
 export const getPosts = async (req, res) => {
   try {
-    let { page = 1, limit = 10, sort = "desc" } = req.query;
-    const skip = parseInt((page - 1) * limit);
-    limit = parseInt(limit) > 10 || parseInt(limit) < 0 ? 10 : parseInt(limit);
-
-    const { posts, totalCounts } = await listPosts({ skip, limit, sort });
-
-    res.status(200).json({ posts, totalCounts });
-  } catch (err) {
-    res.status(404).json({ message: err.message });
-  }
-};
-
-export const getUserPosts = async (req, res) => {
-  try {
     const { userId } = req.params;
+    let { page = 1, limit = 10, sort = "desc" } = req.query;
 
-    const post = await Post.find({ author: userId })
-      .populate("author", "firstName lastName location occupation picturePath")
-      .populate({
-        path: "comments.author",
-        model: "User",
-        select: "firstName lastName location occupation picturePath",
-      })
-      .sort({ createdAt: "desc" });
+    const skip = parseInt((page - 1) * limit);
+    limit = parseInt(limit) > 15 || parseInt(limit) < 0 ? 15 : parseInt(limit);
 
-    console.log("tester", post);
-
-    res.status(200).json(post);
+    if (userId) {
+      const { posts, totalCounts } = await listPosts({
+        userId,
+        skip,
+        limit,
+        sort,
+      });
+      res.status(200).json({ posts, totalCounts });
+    } else {
+      const { posts, totalCounts } = await listPosts({ skip, limit, sort });
+      res.status(200).json({ posts, totalCounts });
+    }
   } catch (err) {
-    res.status(404).json({ message: err.message });
+    res.status(500).json({ message: err.message });
   }
 };
 
-export const likePost = async (req, res) => {
+export const createNewPost = async (req, res) => {
   try {
-    const { id } = req.params;
-    const { userId } = req.body;
-    const post = await Post.findById(id);
-    const isLiked = post.likes.get(userId);
+    const { userId, description } = req.body;
+    let { page = 1, limit = 10, sort = "desc" } = req.query;
 
-    if (isLiked) {
-      post.likes.delete(userId);
+    const skip = parseInt((page - 1) * limit);
+    limit = parseInt(limit) > 15 || parseInt(limit) < 0 ? 15 : parseInt(limit);
+
+    if (req.file) {
+      const picturePath = await addFileCloud(req.file);
+      await addNewPost({ userId, description, picturePath });
     } else {
-      post.likes.set(userId, true);
+      await addNewPost({
+        userId,
+        description,
+        picturePath: "",
+      });
     }
 
-    const posts = await Post.findByIdAndUpdate(
-      id,
-      { likes: post.likes },
-      { new: true }
-    )
-      .populate("author", "firstName lastName location occupation picturePath")
-      .populate({
-        path: "comments.author",
-        model: "User",
-        select: "firstName lastName location occupation picturePath",
-      })
-      .sort({ createdAt: "desc" });
-
-    res.status(201).json(posts);
+    const { posts, totalCounts } = await listPosts({ skip, limit, sort });
+    res.status(201).json({ posts, totalCounts });
   } catch (err) {
-    res.status(404).json({ message: err.message });
+    res.status(500).json({ message: err.message });
+  }
+};
+
+export const patchLike = async (req, res) => {
+  try {
+    const { postId } = req.params;
+    const { userId } = req.body;
+
+    const post = await patchLikePost({ postId, userId });
+
+    res.status(201).json(post);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
   }
 };
 
 export const addComment = async (req, res) => {
   try {
-    const { id } = req.params;
+    const { id: userId } = req.user;
+    const { postId } = req.params;
     const { text } = req.body;
-    const { userId } = req.body;
 
-    const post = await Post.findById(id);
-    const user = await User.findById(userId);
+    const updatedPost = await addCommentPost({ userId, postId, text });
 
-    const comment = {
-      author: user._id,
-      created: new Date(),
-      text,
-    };
-
-    const updatePost = await Post.findByIdAndUpdate(id, {
-      comments: [...post.comments, comment],
-    });
-
-    const updatedPosts = await Post.find()
-      .populate("author", "firstName lastName location occupation picturePath")
-      .populate({
-        path: "comments.author",
-        model: "User",
-        select: "firstName lastName location occupation picturePath",
-      })
-      .sort({ createdAt: "desc" });
-
-    res.status(200).json(updatedPosts);
+    res.status(200).json(updatedPost);
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -106,38 +90,12 @@ export const addComment = async (req, res) => {
 
 export const deleteComment = async (req, res) => {
   try {
-    const { id } = req.params;
-    const { text } = req.body;
+    const { postId } = req.params;
+    const { created } = req.body;
 
-    const post = await Post.findById(id);
+    const updatePost = await deleteCommentPost({ postId, created });
 
-    if (!post) {
-      res.status(500).json({ message: "Post not found" });
-    }
-
-    const newComments = post.comments.filter((comment) => {
-      if (comment.text !== text) {
-        return true;
-      }
-      return false;
-    });
-
-    console.log("text", newComments);
-
-    await Post.findByIdAndUpdate(id, {
-      comments: newComments,
-    });
-
-    const updatedPosts = await Post.find()
-      .populate("author", "firstName lastName location occupation picturePath")
-      .populate({
-        path: "comments.author",
-        model: "User",
-        select: "firstName lastName location occupation picturePath",
-      })
-      .sort({ createdAt: "desc" });
-
-    res.status(200).json(updatedPosts);
+    res.status(201).json(updatePost);
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -145,25 +103,16 @@ export const deleteComment = async (req, res) => {
 
 export const deletePost = async (req, res) => {
   try {
-    const { id } = req.params;
-    const post = await Post.findById(id);
+    const { postId } = req.params;
+    let { page = 1, limit = 10, sort = "desc" } = req.query;
 
-    if (post.picturePath) {
-      await deleteFileCloud(post.picturePath);
-    }
+    const skip = parseInt((page - 1) * limit);
+    limit = parseInt(limit) > 15 || parseInt(limit) < 0 ? 15 : parseInt(limit);
 
-    await Post.findByIdAndDelete(id);
+    await deleteOnePost({ postId });
 
-    const posts = await Post.find()
-      .populate("author", "firstName lastName location occupation picturePath")
-      .populate({
-        path: "comments.author",
-        model: "User",
-        select: "firstName lastName location occupation picturePath",
-      })
-      .sort({ createdAt: "desc" });
-
-    res.status(200).json(posts);
+    const { posts, totalCounts } = await listPosts({ skip, limit, sort });
+    res.status(201).json({ posts, totalCounts });
   } catch (err) {
     res.status(404).json({ message: err.message });
   }
