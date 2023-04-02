@@ -1,12 +1,14 @@
 import User from "../models/User.js";
 import Friend from "../models/Friend.js";
 import cloudConfig from "../config/cloudConfig.js";
+import { getUser, getUsers } from "../services/mongoose/userServices.js";
 import { addFileCloud, deleteFileCloud } from "../services/cloud/cloud.js";
 
-export const getUser = async (req, res) => {
+export const getUserData = async (req, res) => {
   try {
-    const { id } = req.params;
-    const user = await User.findById(id);
+    const { userId } = req.params;
+
+    const user = await getUser(userId);
 
     res.status(200).json(user);
   } catch (err) {
@@ -16,9 +18,14 @@ export const getUser = async (req, res) => {
 
 export const getAllUsers = async (req, res) => {
   try {
-    const users = await User.find({});
+    let { page = 1, limit = 10, sort = "desc" } = req.query;
 
-    res.status(200).json(users);
+    const skip = parseInt((page - 1) * limit);
+    limit = parseInt(limit) > 15 || parseInt(limit) < 0 ? 15 : parseInt(limit);
+
+    const { users, totalCounts } = await getUsers({ skip, limit, sort });
+
+    res.status(200).json({ users, totalCounts });
   } catch (err) {
     res.status(404).json({ message: err.message });
   }
@@ -26,12 +33,12 @@ export const getAllUsers = async (req, res) => {
 
 export const getUserFriends = async (req, res) => {
   try {
-    const { id } = req.params;
-    const user = await User.findById(id);
+    const { userId } = req.params;
+    const user = await User.findById(userId);
 
     if (!user) return res.status(404).json({ message: "No found user" });
 
-    const friends = await Friend.findOne({ userId: id }).populate(
+    const friends = await Friend.findOne({ userId }).populate(
       "friends.friendId",
       "_id, firstName lastName location occupation picturePath"
     );
@@ -43,8 +50,8 @@ export const getUserFriends = async (req, res) => {
 
 export const addRemoveFriend = async (req, res) => {
   try {
-    const { id, friendId } = req.params;
-    const friend = await Friend.findOne({ userId: id });
+    const { userId, friendId } = req.params;
+    const friend = await Friend.findOne({ userId });
 
     if (!friend) return res.status(404).json({ message: "No found user" });
 
@@ -60,7 +67,7 @@ export const addRemoveFriend = async (req, res) => {
       await friend.save();
     }
 
-    const updateFriendsList = await Friend.findOne({ userId: id }).populate(
+    const updateFriendsList = await Friend.findOne({ userId }).populate(
       "friends.friendId",
       "_id, firstName lastName location occupation picturePath"
     );
@@ -72,8 +79,8 @@ export const addRemoveFriend = async (req, res) => {
 
 export const changeUserAvatar = async (req, res) => {
   try {
-    const { id } = req.user;
-    const user = await User.findById(id);
+    const { id: userId } = req.user;
+    const user = await User.findById(userId);
 
     if (!user) {
       res.status(404).json({ message: "User does not exists" });

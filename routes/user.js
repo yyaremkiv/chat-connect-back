@@ -1,6 +1,6 @@
 import express from "express";
 import {
-  getUser,
+  getUserData,
   getAllUsers,
   getUserFriends,
   addRemoveFriend,
@@ -13,9 +13,9 @@ const router = express.Router();
 const upload = multer({ storage: multer.memoryStorage() });
 
 router.get("/list", verifyToken, getAllUsers);
-router.get("/:id", verifyToken, getUser);
-router.get("/:id/friends", verifyToken, getUserFriends);
-router.patch("/:id/:friendId", verifyToken, addRemoveFriend);
+router.get("/:userId", verifyToken, getUserData);
+router.get("/:userId/friends", verifyToken, getUserFriends);
+router.patch("/:userId/:friendId", verifyToken, addRemoveFriend);
 router.patch(
   "/avatar",
   verifyToken,

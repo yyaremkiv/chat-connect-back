@@ -1,5 +1,3 @@
-import User from "../models/User.js";
-import Post from "../models/Post.js";
 import { addFileCloud } from "../services/cloud/cloud.js";
 import {
   listPosts,
@@ -8,7 +6,7 @@ import {
   patchLikePost,
   addCommentPost,
   deleteCommentPost,
-} from "../services/postsService.js";
+} from "../services/mongoose/postsService.js";
 
 export const getPosts = async (req, res) => {
   try {

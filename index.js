@@ -7,7 +7,7 @@ import helmet from "helmet";
 import morgan from "morgan";
 import path from "path";
 import authRoutes from "./routes/auth.js";
-import userRoutes from "./routes/users.js";
+import userRoutes from "./routes/user.js";
 import postRoutes from "./routes/posts.js";
 import { fileURLToPath } from "url";
 import { Storage } from "@google-cloud/storage";

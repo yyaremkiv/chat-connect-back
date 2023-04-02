@@ -66,7 +66,11 @@ const UserSchema = new mongoose.Schema(
         "https://storage.cloud.google.com/chat-connect/no-user-image.jpg",
     },
     friends: {
-      type: String,
+      type: Number,
+      default: 0,
+    },
+    posts: {
+      type: Number,
       default: 0,
     },
     viewedProfile: Number,

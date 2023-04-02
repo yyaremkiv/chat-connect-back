@@ -1,5 +1,5 @@
-import Post from "../models/Post.js";
-import { deleteFileCloud } from "./cloud/cloud.js";
+import Post from "../../models/Post.js";
+import { deleteFileCloud } from "../cloud/cloud.js";
 
 const commentsQuery = {
   path: "comments.author",
@@ -61,7 +61,7 @@ export const patchLikePost = async ({ postId, userId }) => {
   }
 
   const updatePost = await Post.findByIdAndUpdate(
-    id,
+    postId,
     { likes: post.likes },
     { new: true }
   )
