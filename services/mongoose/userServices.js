@@ -38,15 +38,10 @@ export const getUsers = async ({ skip, limit, sort }) => {
         posts: { $size: "$posts" },
       },
     },
-    {
-      $sort: { createdAt: sort === "desc" ? -1 : 1 },
-    },
-    {
-      $skip: skip,
-    },
-    {
-      $limit: limit,
-    },
+    { $sort: { createdAt: sort === "desc" ? -1 : 1 } },
+    { $skip: skip },
+    { $limit: limit },
+    { $project: { password: 0, token: 0, __v: 0 } },
   ]);
 
   const totalCounts = await User.countDocuments();

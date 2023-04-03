@@ -140,42 +140,9 @@ export const sendEmail = async (req, res) => {
       html: `
     <html>
       <head>
-        <style>
-          body {
-            font-family: Arial, sans-serif;
-            font-size: 16px;
-            line-height: 1.5;
-          }
-          h1 {
-            font-size: 24px;
-            margin-bottom: 20px;
-          }
-          p {
-            margin-bottom: 20px;
-          }
-          .cta-btn {
-            display: inline-block;
-            padding: 10px 20px;
-            background-color: #F15A29;
-            color: #fff;
-            text-decoration: none;
-            border-radius: 5px;
-          }
-          .cta-btn:hover {
-            background-color: #D44E22;
-          }
-        </style>
       </head>
       <body>
         <h1>Sending with SendGrid is Fun</h1>
-        <p>Dear [Recipient],</p>
-        <p>I hope this email finds you well. I wanted to share with you my recent experience using SendGrid to send emails. It's been an absolute pleasure and I wanted to take a moment to tell you why.</p>
-        <p>Firstly, it's incredibly easy to use. The SendGrid API is well-documented and intuitive, so getting started was a breeze. And once I got going, I found that sending emails with SendGrid is incredibly fast and reliable.</p>
-        <p>But what really sets SendGrid apart is its powerful features. With SendGrid, you can customize your emails with HTML and CSS, track email opens and clicks, and even set up automated email campaigns. And it all integrates seamlessly with Node.js.</p>
-        <p>So if you're looking for a powerful and user-friendly email service, I highly recommend checking out SendGrid. And if you have any questions about getting started, feel free to reply to this email and I'll do my best to help.</p>
-        <a href="https://sendgrid.com/" class="cta-btn">Learn More about SendGrid</a>
-        <p>Thanks for your time,</p>
-        <p>[Your Name]</p>
       </body>
     </html>
   `,
