@@ -3,9 +3,6 @@ import jwt from "jsonwebtoken";
 import User from "../models/User.js";
 import Friend from "../models/Friend.js";
 import cloudConfig from "../config/cloudConfig.js";
-
-// import { sendEmailSanGrid } from "../helpers/sendEmail.js";
-
 import dotenv from "dotenv";
 import sgMail from "@sendgrid/mail";
 dotenv.config();
@@ -49,40 +46,6 @@ export const refresh = async (req, res) => {
     }
 
     res.status(200).json({ user });
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
-};
-
-export const update = async (req, res) => {
-  try {
-    const { id } = req.user;
-    const {
-      firstName,
-      lastName,
-      email,
-      location,
-      occupation,
-      twitter,
-      linkendin,
-    } = req.body;
-    let user = await User.findById(id);
-
-    if (!user) {
-      throw new Error("Not found user with this id");
-    }
-
-    await User.findByIdAndUpdate(id, {
-      firstName,
-      lastName,
-      email,
-      location,
-      occupation,
-      twitter,
-      linkendin,
-    });
-    const updateUser = await User.find({}).select("-password -token -__v");
-    res.status(201).json(updateUser);
   } catch (err) {
     res.status(500).json({ message: err.message });
   }

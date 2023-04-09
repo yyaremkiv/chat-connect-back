@@ -40,6 +40,10 @@ export const addNewPost = async ({ userId, description, picturePath }) => {
   return newPost;
 };
 
+export const updatePost = async ({ userId, description, picturePath }) => {
+  return null;
+};
+
 export const deleteOnePost = async ({ postId }) => {
   const post = await Post.findById(postId);
 

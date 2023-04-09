@@ -4,6 +4,8 @@ import cloudConfig from "../config/cloudConfig.js";
 import { getUser, getUsers } from "../services/mongoose/userServices.js";
 import { addFileCloud, deleteFileCloud } from "../services/cloud/cloud.js";
 
+import UserService from "../services/user-service.js";
+
 export const getUserData = async (req, res) => {
   try {
     const { userId } = req.params;
@@ -72,41 +74,6 @@ export const addRemoveFriend = async (req, res) => {
       "_id, firstName lastName location occupation picturePath"
     );
     res.status(200).json(updateFriendsList);
-  } catch (err) {
-    res.status(404).json({ error: err.message });
-  }
-};
-
-export const changeUserAvatar = async (req, res) => {
-  try {
-    const { id: userId } = req.user;
-    const user = await User.findById(userId);
-
-    if (!user) {
-      res.status(404).json({ message: "User does not exists" });
-      return;
-    }
-
-    if (req.file) {
-      console.log("user id this");
-      if (user.picturePath === cloudConfig.publicImagePathDefault) {
-        const publicUrl = await addFileCloud(req.file);
-        await User.findByIdAndUpdate(id, { picturePath: publicUrl });
-      } else {
-        await deleteFileCloud(user.picturePath);
-        const publicUrl = await addFileCloud(req.file);
-        await User.findByIdAndUpdate(id, { picturePath: publicUrl });
-      }
-    } else {
-      console.log("user id this");
-      await User.findByIdAndUpdate(id, {
-        picturePath: cloudConfig.publicImagePathDefault,
-      });
-    }
-
-    const updateUser = await User.findById(id).select("-password -token -__v");
-
-    res.status(201).json(updateUser);
   } catch (err) {
     res.status(404).json({ error: err.message });
   }

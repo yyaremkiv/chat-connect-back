@@ -7,7 +7,6 @@ import {
   login,
   refresh,
   logout,
-  update,
   deleteAvatar,
   sendEmail,
 } from "../controllers/auth.js";
@@ -26,7 +25,6 @@ router.patch("/send", sendEmail);
 router.get("/refresh", verifyToken, refresh);
 router.get("/logout", verifyToken, logout);
 router.post("/login", login);
-router.patch("/update", verifyToken, update);
 router.delete("/avatar", verifyToken, deleteAvatar);
 
 async function register(req, res) {

@@ -1,4 +1,6 @@
-import { addFileCloud } from "../services/cloud/cloud.js";
+import Post from "../models/Post.js";
+
+import { addFileCloud, deleteFileCloud } from "../services/cloud/cloud.js";
 import {
   listPosts,
   addNewPost,
@@ -50,6 +52,43 @@ export const createNewPost = async (req, res) => {
         description,
         picturePath: "",
       });
+    }
+
+    const { posts, totalCounts } = await listPosts({ skip, limit, sort });
+    res.status(201).json({ posts, totalCounts });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+export const updatePost = async (req, res) => {
+  try {
+    const { userId, postId, description, deletePhoto } = req.body;
+    let { page = 1, limit = 10, sort = "desc" } = req.query;
+
+    const skip = parseInt((page - 1) * limit);
+    limit = parseInt(limit) > 15 || parseInt(limit) < 0 ? 15 : parseInt(limit);
+
+    const post = await Post.findById(postId);
+
+    if (req.file) {
+      if (post.picturePath) await deleteFileCloud(post.picturePath);
+      const publicUrl = await addFileCloud(req.file);
+
+      await Post.findByIdAndUpdate(postId, {
+        picturePath: publicUrl,
+        description,
+      });
+    } else {
+      if (deletePhoto === "true") {
+        console.log("deletePhoto", Boolean(deletePhoto));
+        if (post.picturePath) {
+          await deleteFileCloud(post.picturePath);
+        }
+        await Post.findByIdAndUpdate(postId, { description, picturePath: "" });
+      } else {
+        await Post.findByIdAndUpdate(postId, { description });
+      }
     }
 
     const { posts, totalCounts } = await listPosts({ skip, limit, sort });

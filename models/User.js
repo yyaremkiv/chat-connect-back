@@ -63,7 +63,7 @@ const UserSchema = new mongoose.Schema(
     picturePath: {
       type: String,
       default:
-        "https://storage.cloud.google.com/chat-connect/no-user-image.jpg",
+        "https://storage.googleapis.com/chat-connect/avatar/no-user-image.jpg",
     },
     friends: {
       type: Number,
