@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import User from "./User.js";
+import User from "./user-model.js";
 
 const friendSchema = new mongoose.Schema(
   {

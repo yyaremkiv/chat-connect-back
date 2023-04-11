@@ -1,26 +1,32 @@
 import express from "express";
 import multer from "multer";
-import {
-  getPosts,
-  createNewPost,
-  patchLike,
-  deletePost,
-  addComment,
-  deleteComment,
-  updatePost,
-} from "../controllers/posts.js";
-import { verifyToken } from "../middleware/auth.js";
+import authMiddleware from "../middleware/auth-middleware.js";
+import PostController from "../controllers/posts-controller.js";
 
 const router = express.Router();
 const upload = multer({ storage: multer.memoryStorage() });
 
-router.get("/", verifyToken, getPosts);
-router.get("/:userId/posts", verifyToken, getPosts);
-router.post("/", verifyToken, upload.single("picture"), createNewPost);
-router.patch("/", verifyToken, upload.single("picture"), updatePost);
-router.patch("/:postId/like", verifyToken, patchLike);
-router.patch("/:postId/comment", verifyToken, addComment);
-router.patch("/:postId/comment/delete", verifyToken, deleteComment);
-router.delete("/:postId/delete", verifyToken, deletePost);
+router.get("/", authMiddleware, PostController.getPosts);
+router.get("/:userId/posts", authMiddleware, PostController.getPosts);
+router.post(
+  "/",
+  authMiddleware,
+  upload.single("picture"),
+  PostController.createNewPost
+);
+router.patch(
+  "/",
+  authMiddleware,
+  upload.single("picture"),
+  PostController.updatePost
+);
+router.patch("/:postId/like", authMiddleware, PostController.patchLike);
+router.patch("/:postId/comment", authMiddleware, PostController.addComment);
+router.patch(
+  "/:postId/comment/delete",
+  authMiddleware,
+  PostController.deleteComment
+);
+router.delete("/:postId/delete", authMiddleware, PostController.deletePost);
 
 export default router;

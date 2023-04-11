@@ -73,6 +73,8 @@ const UserSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
+    isActivated: { type: Boolean, default: false },
+    activationLink: { type: String },
     viewedProfile: Number,
     impressions: Number,
   },
