@@ -2,15 +2,19 @@ import Post from "../models/post-model.js";
 import CloudService from "./cloud-service.js";
 import { v4 as uuidv4 } from "uuid";
 
-const commentsQuery = {
-  path: "comments.author",
-  model: "User",
-  select: "firstName lastName location occupation picturePath",
-};
 const authorQuery = {
   path: "author",
   model: "User",
   select: "firstName lastName location occupation picturePath",
+};
+
+const commentsQuery = {
+  path: "comments",
+  populate: {
+    path: "author",
+    model: "User",
+    select: "firstName lastName location occupation picturePath",
+  },
 };
 
 class PostService {
@@ -19,14 +23,19 @@ class PostService {
     const posts = await Post.find(query)
       .select("-__v")
       .populate(authorQuery)
-      .populate(commentsQuery)
       .sort({ createdAt: sort })
       .skip(skip)
       .limit(limit);
 
     const totalCounts = await Post.countDocuments(query);
 
-    return { posts, totalCounts };
+    const limitedPosts = posts.map((post) => {
+      post.commentsCount = post.comments.length;
+      post.comments = [];
+      return post;
+    });
+
+    return { posts: limitedPosts, totalCounts };
   };
 
   static addNewPost = async ({ userId, description, picturePath }) => {
@@ -77,51 +86,111 @@ class PostService {
     return updatePost;
   };
 
-  static addCommentPost = async ({ userId, postId, text }) => {
+  static fetchComments = async ({ postId, skip, limit, sort, isLoadMore }) => {
+    console.log(postId, skip, limit, sort, isLoadMore);
+    const post = await Post.findById(postId)
+      .select("-__v")
+      .populate(authorQuery)
+      .populate(commentsQuery);
+
+    post.comments.sort((a, b) =>
+      sort === "desc" ? a.created - b.created : b.created - a.created
+    );
+    post.commentsCount = post.comments.length;
+    if (post.comments.length > limit) {
+      post.comments = post.comments.slice(skip, skip + limit);
+    }
+
+    return post;
+  };
+
+  static addComment = async ({ userId, postId, text, skip, limit, sort }) => {
     const comment = {
       id: uuidv4(),
       author: userId,
       created: new Date(),
+      updated: new Date(),
       text,
     };
 
-    const updatePost = await Post.findByIdAndUpdate(
+    const updatedPost = await Post.findByIdAndUpdate(
       postId,
-      {
-        $push: { comments: { $each: [comment], $position: 0 } },
-      },
+      { $push: { comments: { $each: [comment], $position: 0 } } },
       { new: true }
     )
       .populate(authorQuery)
-      .populate(commentsQuery)
-      .sort({ createdAt: "desc" });
+      .populate(commentsQuery);
 
-    return updatePost;
+    updatedPost.comments.sort((a, b) =>
+      sort === "desc" ? a.created - b.created : b.created - a.created
+    );
+    updatedPost.commentsCount = updatedPost.comments.length;
+    if (updatedPost.comments.length > limit) {
+      updatedPost.comments = updatedPost.comments.slice(skip, skip + limit);
+    }
+
+    return updatedPost;
   };
 
-  static deleteComment = async ({ postId, commentId }) => {
+  static updateComment = async ({
+    postId,
+    commentId,
+    text,
+    skip,
+    limit,
+    sort,
+  }) => {
     const post = await Post.findById(postId);
 
-    const newComments = post.comments.filter((comment) => {
-      console.log("console.log", comment.id, "-------", commentId);
-      if (comment.id !== commentId) {
-        return true;
+    const newComments = post.comments.map((comment) => {
+      if (comment.id === commentId) {
+        comment.text = text;
+        comment.updated = new Date();
       }
-      return false;
+      return comment;
     });
 
-    const updatePost = await Post.findByIdAndUpdate(
+    const updatedPost = await Post.findByIdAndUpdate(
       postId,
-      {
-        comments: newComments,
-      },
+      { comments: newComments },
       { new: true }
     )
       .populate(authorQuery)
-      .populate(commentsQuery)
-      .sort({ createdAt: "desc" });
+      .populate(commentsQuery);
 
-    return updatePost;
+    updatedPost.comments.sort((a, b) =>
+      sort === "desc" ? a.created - b.created : b.created - a.created
+    );
+    updatedPost.commentsCount = updatedPost.comments.length;
+    if (updatedPost.comments.length > limit) {
+      updatedPost.comments = updatedPost.comments.slice(skip, skip + limit);
+    }
+
+    return updatedPost;
+  };
+
+  static deleteComment = async ({ postId, commentId, skip, limit, sort }) => {
+    const post = await Post.findById(postId);
+
+    const newComments = post.comments.filter((item) => item.id !== commentId);
+
+    const updatedPost = await Post.findByIdAndUpdate(
+      postId,
+      { comments: newComments },
+      { new: true }
+    )
+      .populate(authorQuery)
+      .populate(commentsQuery);
+
+    updatedPost.comments.sort((a, b) =>
+      sort === "desc" ? a.created - b.created : b.created - a.created
+    );
+    updatedPost.commentsCount = updatedPost.comments.length;
+    if (updatedPost.comments.length > limit) {
+      updatedPost.comments = updatedPost.comments.slice(skip, skip + limit);
+    }
+
+    return updatedPost;
   };
 }
 

@@ -20,13 +20,11 @@ router.patch(
   upload.single("picture"),
   PostController.updatePost
 );
+router.patch("/comments", authMiddleware, PostController.fetchComments);
 router.patch("/:postId/like", authMiddleware, PostController.patchLike);
-router.patch("/:postId/comment", authMiddleware, PostController.addComment);
-router.patch(
-  "/:postId/comment/delete",
-  authMiddleware,
-  PostController.deleteComment
-);
+router.patch("/comment/add", authMiddleware, PostController.addComment);
+router.patch("/comment/update", authMiddleware, PostController.updateComment);
+router.patch("/comment/delete", authMiddleware, PostController.deleteComment);
 router.delete("/:postId/delete", authMiddleware, PostController.deletePost);
 
 export default router;

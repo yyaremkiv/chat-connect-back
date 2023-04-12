@@ -123,16 +123,70 @@ class PostController {
     }
   };
 
+  static fetchComments = async (req, res) => {
+    try {
+      const { postId, isLoadMore } = req.body;
+      let { page = 1, limit = 10, sort = "desc" } = req.query;
+
+      const skip = parseInt((page - 1) * limit);
+      limit =
+        parseInt(limit) > 15 || parseInt(limit) < 0 ? 15 : parseInt(limit);
+
+      const updatedPost = await PostService.fetchComments({
+        postId,
+        skip,
+        limit,
+        sort,
+        isLoadMore,
+      });
+
+      res.status(200).json(updatedPost);
+    } catch (err) {
+      res.status(500).json({ message: err.message });
+    }
+  };
+
   static addComment = async (req, res) => {
     try {
       const { _id: userId } = req.user;
-      const { postId } = req.params;
-      const { text } = req.body;
+      const { postId, text } = req.body;
+      let { page = 1, limit = 10, sort = "desc" } = req.query;
 
-      const updatedPost = await PostService.addCommentPost({
+      const skip = parseInt((page - 1) * limit);
+      limit =
+        parseInt(limit) > 15 || parseInt(limit) < 0 ? 15 : parseInt(limit);
+
+      const updatedPost = await PostService.addComment({
         userId,
         postId,
         text,
+        skip,
+        limit,
+        sort,
+      });
+
+      res.status(200).json(updatedPost);
+    } catch (err) {
+      res.status(500).json({ message: err.message });
+    }
+  };
+
+  static updateComment = async (req, res) => {
+    try {
+      const { postId, commentId, text } = req.body;
+      let { page = 1, limit = 10, sort = "desc" } = req.query;
+
+      const skip = parseInt((page - 1) * limit);
+      limit =
+        parseInt(limit) > 15 || parseInt(limit) < 0 ? 15 : parseInt(limit);
+
+      const updatedPost = await PostService.updateComment({
+        postId,
+        commentId,
+        text,
+        skip,
+        limit,
+        sort,
       });
 
       res.status(200).json(updatedPost);
@@ -143,15 +197,22 @@ class PostController {
 
   static deleteComment = async (req, res) => {
     try {
-      const { postId } = req.params;
-      const { commentId } = req.body;
+      const { postId, commentId } = req.body;
+      let { page = 1, limit = 10, sort = "desc" } = req.query;
 
-      const updatePost = await PostService.deleteComment({
+      const skip = parseInt((page - 1) * limit);
+      limit =
+        parseInt(limit) > 15 || parseInt(limit) < 0 ? 15 : parseInt(limit);
+
+      const deletedCommentId = await PostService.deleteComment({
         postId,
         commentId,
+        skip,
+        limit,
+        sort,
       });
 
-      res.status(201).json(updatePost);
+      res.status(201).json(deletedCommentId);
     } catch (err) {
       res.status(500).json({ message: err.message });
     }
