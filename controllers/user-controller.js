@@ -1,6 +1,7 @@
 import User from "../models/user-model.js";
 import Friend from "../models/friend-model.js";
 import UserService from "../services/user-service.js";
+import mongoose from "mongoose";
 
 class UserController {
   static async updateDataUser(req, res) {
@@ -71,7 +72,9 @@ class UserController {
 
   static getUserFriends = async (req, res) => {
     try {
+      const { _id: authUserId } = req.user;
       const { userId } = req.params;
+
       const user = await User.findById(userId);
 
       if (!user) return res.status(404).json({ message: "No found user" });
@@ -80,7 +83,19 @@ class UserController {
         "friends.friendId",
         "_id, firstName lastName location occupation picturePath"
       );
-      res.status(200).json(friends);
+
+      const [userFriends, authUserFriends] = await Promise.all([
+        Friend.findOne({ userId }).populate(
+          "friends.friendId",
+          "_id, firstName lastName location occupation picturePath"
+        ),
+        Friend.findOne({ userId: authUserId }).populate(
+          "friends.friendId",
+          "_id, firstName lastName location occupation picturePath"
+        ),
+      ]);
+
+      res.status(200).json({ userFriends, authUserFriends });
     } catch (err) {
       res.status(404).json({ error: err.message });
     }
@@ -88,10 +103,12 @@ class UserController {
 
   static addRemoveFriend = async (req, res) => {
     try {
+      const { _id: authUserId } = req.user;
       const { userId, friendId } = req.params;
+
       const friend = await Friend.findOne({ userId });
 
-      if (!friend) return res.status(404).json({ message: "No found user" });
+      console.log("this is console", userId, friend);
 
       const friendIndex = friend.friends.findIndex(
         (friend) => friend.friendId == friendId
@@ -105,11 +122,18 @@ class UserController {
         await friend.save();
       }
 
-      const updateFriendsList = await Friend.findOne({ userId }).populate(
-        "friends.friendId",
-        "_id, firstName lastName location occupation picturePath"
-      );
-      res.status(200).json(updateFriendsList);
+      const [userFriends, authUserFriends] = await Promise.all([
+        Friend.findOne({ userId: friendId }).populate(
+          "friends.friendId",
+          "_id, firstName lastName location occupation picturePath"
+        ),
+        Friend.findOne({ userId: authUserId }).populate(
+          "friends.friendId",
+          "_id, firstName lastName location occupation picturePath"
+        ),
+      ]);
+
+      res.status(200).json({ userFriends, authUserFriends });
     } catch (err) {
       res.status(404).json({ error: err.message });
     }

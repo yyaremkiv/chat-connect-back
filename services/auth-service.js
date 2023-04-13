@@ -1,4 +1,5 @@
 import User from "../models/user-model.js";
+import Friend from "../models/friend-model.js";
 import bcrypt from "bcrypt";
 import { v4 as uuidv4 } from "uuid";
 import mailService from "./mail-service.js";
@@ -28,6 +29,7 @@ class AuthService {
       email,
       `${process.env.API_URL}/api/activate/${activationLink}`
     );
+    await Friend.create({ userId: user._id });
 
     const userDto = new UserDto(user);
     const tokens = tokenService.generateTokens({ ...userDto });
