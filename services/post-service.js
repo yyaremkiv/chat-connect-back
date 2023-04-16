@@ -138,6 +138,9 @@ class PostService {
       .populate(authorQuery)
       .populate(commentsQuery);
 
+    updatedPost.commentsCount = updatedPost.comments.length;
+    updatedPost.comments = [];
+
     return updatedPost;
   };
 

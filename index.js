@@ -10,7 +10,6 @@ import authRoutes from "./routes/auth.js";
 import userRoutes from "./routes/user.js";
 import postRoutes from "./routes/posts.js";
 import cookieParser from "cookie-parser";
-import { fileURLToPath } from "url";
 import { Storage } from "@google-cloud/storage";
 import errorMiddleware from "./middleware/error-middleware.js";
 
@@ -21,8 +20,8 @@ app.use(helmet());
 app.use(helmet.crossOriginResourcePolicy({ policy: "cross-origin" }));
 app.use(morgan("common"));
 dotenv.config();
-app.use(bodyParser.json({ limit: "30mb", extended: true }));
-app.use(bodyParser.urlencoded({ limit: "30mb", extended: true }));
+app.use(bodyParser.json({ limit: "15mb", extended: true }));
+app.use(bodyParser.urlencoded({ limit: "15mb", extended: true }));
 app.use(
   cors({
     credentials: true,

@@ -59,7 +59,7 @@ class PostController {
         deletePhoto,
       });
 
-      res.status(201).json(updatedPost);
+      res.status(200).json(updatedPost);
     } catch (e) {
       res.status(500).json({ message: e.message });
     }
@@ -78,7 +78,7 @@ class PostController {
         sort,
       });
 
-      res.status(201).json({ posts, totalCounts });
+      res.status(200).json({ posts, totalCounts });
     } catch (e) {
       res.status(404).json({ message: e.message });
     }
@@ -89,7 +89,10 @@ class PostController {
       const { postId } = req.params;
       const { userId } = req.body;
 
-      const updatedPost = await PostService.patchLikePost({ postId, userId });
+      const updatedPost = await PostService.patchLikePost({
+        postId,
+        userId,
+      });
 
       res.status(201).json(updatedPost);
     } catch (e) {
@@ -131,7 +134,7 @@ class PostController {
         sort,
       });
 
-      res.status(200).json(updatedPost);
+      res.status(201).json(updatedPost);
     } catch (e) {
       res.status(500).json({ message: e.message });
     }

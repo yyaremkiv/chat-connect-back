@@ -39,7 +39,7 @@ class UserController {
         body: req.body,
       });
 
-      return res.status(201).json(updateUser);
+      return res.status(200).json(updateUser);
     } catch (e) {
       res.status(500).json({ message: e.message });
     }
