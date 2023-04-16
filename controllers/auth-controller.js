@@ -1,6 +1,4 @@
 import AuthService from "../services/auth-service.js";
-// import ApiError from "../exceptions/api-error.js";
-// import { validationResult } from "express-validator";
 
 class AuthController {
   static async register(req, res, next) {

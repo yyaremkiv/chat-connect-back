@@ -15,6 +15,7 @@ export default function (req, res, next) {
 
     const user = tokenService.validateAccessToken(accessToken);
     if (!user) {
+      console.log("this is 3 console", user);
       return next(ApiError.UnauthorizedError());
     }
 

@@ -56,10 +56,6 @@ const UserSchema = new mongoose.Schema(
       max: 50,
       default: "",
     },
-    token: {
-      type: String,
-      default: null,
-    },
     picturePath: {
       type: String,
       default:

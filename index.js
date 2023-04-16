@@ -15,6 +15,7 @@ import { Storage } from "@google-cloud/storage";
 import errorMiddleware from "./middleware/error-middleware.js";
 
 const app = express();
+
 app.use(express.json());
 app.use(cookieParser());
 app.use(helmet());
@@ -26,7 +27,7 @@ app.use(bodyParser.urlencoded({ limit: "30mb", extended: true }));
 app.use(
   cors({
     credentials: true,
-    origin: process.env.CLIENT_URL,
+    // origin: process.env.CLIENT_URL,
   })
 );
 export const storage = new Storage({

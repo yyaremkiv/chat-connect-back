@@ -9,7 +9,7 @@ import ApiError from "../exceptions/api-error.js";
 
 class AuthService {
   static async registration({ firstName, lastName, email, password }) {
-    const candidate = await User.findOne({ email });
+    const candidate = await User.findOne({ email: email.toLowerCase() });
     if (candidate) {
       throw ApiError.BadRequest(
         `A user with the email address ${email} already exists`
@@ -21,13 +21,15 @@ class AuthService {
     const user = await User.create({
       firstName,
       lastName,
-      email,
+      email: email.toLowerCase(),
       password: hashPassword,
       activationLink,
+      viewedProfile: Math.floor(Math.random() * 10000),
+      impressions: Math.floor(Math.random() * 10000),
     });
     await mailService.sendActivationMail(
       email,
-      `${process.env.API_URL}/api/activate/${activationLink}`
+      `${process.env.API_URL}/activate/${activationLink}`
     );
     await Friend.create({ userId: user._id });
 
