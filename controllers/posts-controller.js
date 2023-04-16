@@ -1,16 +1,11 @@
-import Post from "../models/post-model.js";
 import PostService from "../services/post-service.js";
-import CloudService from "../services/cloud-service.js";
+import { processPaginationParams } from "../config/pagination.js";
 
 class PostController {
   static getPosts = async (req, res) => {
     try {
       const { userId } = req.params;
-      let { page = 1, limit = 10, sort = "desc" } = req.query;
-
-      const skip = parseInt((page - 1) * limit);
-      limit =
-        parseInt(limit) > 15 || parseInt(limit) < 0 ? 15 : parseInt(limit);
+      const { skip, limit, sort } = processPaginationParams(req.query);
 
       if (userId) {
         const { posts, totalCounts } = await PostService.listPosts({
@@ -28,204 +23,52 @@ class PostController {
         });
         res.status(200).json({ posts, totalCounts });
       }
-    } catch (err) {
-      res.status(500).json({ message: err.message });
+    } catch (e) {
+      res.status(500).json({ message: e.message });
     }
   };
 
   static createNewPost = async (req, res) => {
     try {
       const { userId, description } = req.body;
-      let { page = 1, limit = 10, sort = "desc" } = req.query;
+      const { skip, limit, sort } = processPaginationParams(req.query);
 
-      const skip = parseInt((page - 1) * limit);
-      limit =
-        parseInt(limit) > 15 || parseInt(limit) < 0 ? 15 : parseInt(limit);
-
-      if (req.file) {
-        const picturePath = await CloudService.addFileCloud(req.file);
-        await PostService.addNewPost({ userId, description, picturePath });
-      } else {
-        await PostService.addNewPost({
-          userId,
-          description,
-          picturePath: "",
-        });
-      }
-
-      const { posts, totalCounts } = await PostService.listPosts({
+      const { posts, totalCounts } = await PostService.addNewPost({
+        userId,
+        description,
+        file: req.file,
         skip,
         limit,
         sort,
       });
+
       res.status(201).json({ posts, totalCounts });
-    } catch (err) {
-      res.status(500).json({ message: err.message });
+    } catch (e) {
+      res.status(500).json({ message: e.message });
     }
   };
 
   static updatePost = async (req, res) => {
     try {
-      const { userId, postId, description, deletePhoto } = req.body;
-      let { page = 1, limit = 10, sort = "desc" } = req.query;
+      const { postId, textPost, deletePhoto } = req.body;
 
-      const skip = parseInt((page - 1) * limit);
-      limit =
-        parseInt(limit) > 15 || parseInt(limit) < 0 ? 15 : parseInt(limit);
-
-      const post = await Post.findById(postId);
-
-      if (req.file) {
-        if (post.picturePath)
-          await CloudService.deleteFileCloud(post.picturePath);
-        const publicUrl = await CloudService.addFileCloud(req.file);
-
-        await Post.findByIdAndUpdate(postId, {
-          picturePath: publicUrl,
-          description,
-        });
-      } else {
-        if (deletePhoto === "true") {
-          console.log("deletePhoto", Boolean(deletePhoto));
-          if (post.picturePath) {
-            await CloudService.deleteFileCloud(post.picturePath);
-          }
-          await Post.findByIdAndUpdate(postId, {
-            description,
-            picturePath: "",
-          });
-        } else {
-          await Post.findByIdAndUpdate(postId, { description });
-        }
-      }
-
-      const { posts, totalCounts } = await PostService.listPosts({
-        skip,
-        limit,
-        sort,
-      });
-      res.status(201).json({ posts, totalCounts });
-    } catch (err) {
-      res.status(500).json({ message: err.message });
-    }
-  };
-
-  static patchLike = async (req, res) => {
-    try {
-      const { postId } = req.params;
-      const { userId } = req.body;
-
-      const post = await PostService.patchLikePost({ postId, userId });
-
-      res.status(201).json(post);
-    } catch (err) {
-      res.status(500).json({ message: err.message });
-    }
-  };
-
-  static fetchComments = async (req, res) => {
-    try {
-      const { postId, isLoadMore } = req.body;
-      let { page = 1, limit = 10, sort = "desc" } = req.query;
-
-      const skip = parseInt((page - 1) * limit);
-      limit =
-        parseInt(limit) > 15 || parseInt(limit) < 0 ? 15 : parseInt(limit);
-
-      const updatedPost = await PostService.fetchComments({
+      const updatedPost = await PostService.updatePost({
         postId,
-        skip,
-        limit,
-        sort,
-        isLoadMore,
+        file: req.file,
+        textPost,
+        deletePhoto,
       });
 
-      res.status(200).json(updatedPost);
-    } catch (err) {
-      res.status(500).json({ message: err.message });
-    }
-  };
-
-  static addComment = async (req, res) => {
-    try {
-      const { _id: userId } = req.user;
-      const { postId, text } = req.body;
-      let { page = 1, limit = 10, sort = "desc" } = req.query;
-
-      const skip = parseInt((page - 1) * limit);
-      limit =
-        parseInt(limit) > 15 || parseInt(limit) < 0 ? 15 : parseInt(limit);
-
-      const updatedPost = await PostService.addComment({
-        userId,
-        postId,
-        text,
-        skip,
-        limit,
-        sort,
-      });
-
-      res.status(200).json(updatedPost);
-    } catch (err) {
-      res.status(500).json({ message: err.message });
-    }
-  };
-
-  static updateComment = async (req, res) => {
-    try {
-      const { postId, commentId, text } = req.body;
-      let { page = 1, limit = 10, sort = "desc" } = req.query;
-
-      const skip = parseInt((page - 1) * limit);
-      limit =
-        parseInt(limit) > 15 || parseInt(limit) < 0 ? 15 : parseInt(limit);
-
-      const updatedPost = await PostService.updateComment({
-        postId,
-        commentId,
-        text,
-        skip,
-        limit,
-        sort,
-      });
-
-      res.status(200).json(updatedPost);
-    } catch (err) {
-      res.status(500).json({ message: err.message });
-    }
-  };
-
-  static deleteComment = async (req, res) => {
-    try {
-      const { postId, commentId } = req.body;
-      let { page = 1, limit = 10, sort = "desc" } = req.query;
-
-      const skip = parseInt((page - 1) * limit);
-      limit =
-        parseInt(limit) > 15 || parseInt(limit) < 0 ? 15 : parseInt(limit);
-
-      const deletedCommentId = await PostService.deleteComment({
-        postId,
-        commentId,
-        skip,
-        limit,
-        sort,
-      });
-
-      res.status(201).json(deletedCommentId);
-    } catch (err) {
-      res.status(500).json({ message: err.message });
+      res.status(201).json(updatedPost);
+    } catch (e) {
+      res.status(500).json({ message: e.message });
     }
   };
 
   static deletePost = async (req, res) => {
     try {
       const { postId } = req.params;
-      let { page = 1, limit = 10, sort = "desc" } = req.query;
-
-      const skip = parseInt((page - 1) * limit);
-      limit =
-        parseInt(limit) > 15 || parseInt(limit) < 0 ? 15 : parseInt(limit);
+      const { skip, limit, sort } = processPaginationParams(req.query);
 
       await PostService.deleteOnePost({ postId });
 
@@ -234,9 +77,98 @@ class PostController {
         limit,
         sort,
       });
+
       res.status(201).json({ posts, totalCounts });
-    } catch (err) {
-      res.status(404).json({ message: err.message });
+    } catch (e) {
+      res.status(404).json({ message: e.message });
+    }
+  };
+
+  static patchLike = async (req, res) => {
+    try {
+      const { postId } = req.params;
+      const { userId } = req.body;
+
+      const updatedPost = await PostService.patchLikePost({ postId, userId });
+
+      res.status(201).json(updatedPost);
+    } catch (e) {
+      res.status(500).json({ message: e.message });
+    }
+  };
+
+  static fetchComments = async (req, res) => {
+    try {
+      const { postId, isLoadMore } = req.body;
+      const { skip, limit, sort } = processPaginationParams(req.query);
+
+      const post = await PostService.fetchComments({
+        postId,
+        skip,
+        limit,
+        sort,
+        isLoadMore,
+      });
+
+      res.status(200).json(post);
+    } catch (e) {
+      res.status(500).json({ message: e.message });
+    }
+  };
+
+  static addComment = async (req, res) => {
+    try {
+      const { _id: userId } = req.user;
+      const { postId, commentText } = req.body;
+      const { skip, limit, sort } = processPaginationParams(req.query);
+
+      const updatedPost = await PostService.addComment({
+        userId,
+        postId,
+        commentText,
+        skip,
+        limit,
+        sort,
+      });
+
+      res.status(200).json(updatedPost);
+    } catch (e) {
+      res.status(500).json({ message: e.message });
+    }
+  };
+
+  static updateComment = async (req, res) => {
+    try {
+      const { postId, commentId, commentText } = req.body;
+
+      const updatedComment = await PostService.updateComment({
+        postId,
+        commentId,
+        commentText,
+      });
+
+      res.status(200).json({ postId, updatedComment });
+    } catch (e) {
+      res.status(500).json({ message: e.message });
+    }
+  };
+
+  static deleteComment = async (req, res) => {
+    try {
+      const { postId, commentId } = req.body;
+      const { skip, limit, sort } = processPaginationParams(req.query);
+
+      const updatedPost = await PostService.deleteComment({
+        postId,
+        commentId,
+        skip,
+        limit,
+        sort,
+      });
+
+      res.status(201).json(updatedPost);
+    } catch (e) {
+      res.status(500).json({ message: e.message });
     }
   };
 }

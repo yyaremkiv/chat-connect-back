@@ -1,9 +1,35 @@
-import User from "../models/user-model.js";
-import Friend from "../models/friend-model.js";
 import UserService from "../services/user-service.js";
-import mongoose from "mongoose";
+import { processPaginationParams } from "../config/pagination.js";
 
 class UserController {
+  static getUserData = async (req, res) => {
+    try {
+      const { userId } = req.params;
+
+      const user = await UserService.getUser(userId);
+
+      res.status(200).json(user);
+    } catch (e) {
+      res.status(404).json({ message: e.message });
+    }
+  };
+
+  static getAllUsers = async (req, res) => {
+    try {
+      const { skip, limit, sort } = processPaginationParams(req.query);
+
+      const { users, totalCounts } = await UserService.getAllUsers({
+        skip,
+        limit,
+        sort,
+      });
+
+      res.status(200).json({ users, totalCounts });
+    } catch (e) {
+      res.status(404).json({ message: e.message });
+    }
+  };
+
   static async updateDataUser(req, res) {
     try {
       const { _id: userId } = req.user;
@@ -14,8 +40,8 @@ class UserController {
       });
 
       return res.status(201).json(updateUser);
-    } catch (err) {
-      res.status(500).json({ message: err.message });
+    } catch (e) {
+      res.status(500).json({ message: e.message });
     }
   }
 
@@ -33,71 +59,24 @@ class UserController {
         const updateUser = await UserService.deleteAvatar(userId);
         res.status(200).json(updateUser);
       }
-    } catch (err) {
-      res.status(500).json({ message: err.message });
+    } catch (e) {
+      res.status(500).json({ message: e.message });
     }
   }
-
-  static getUserData = async (req, res) => {
-    try {
-      const { userId } = req.params;
-
-      const user = await UserService.getUser(userId);
-
-      res.status(200).json(user);
-    } catch (err) {
-      res.status(404).json({ message: err.message });
-    }
-  };
-
-  static getAllUsers = async (req, res) => {
-    try {
-      let { page = 1, limit = 10, sort = "desc" } = req.query;
-
-      const skip = parseInt((page - 1) * limit);
-      limit =
-        parseInt(limit) > 15 || parseInt(limit) < 0 ? 15 : parseInt(limit);
-
-      const { users, totalCounts } = await UserService.getUsers({
-        skip,
-        limit,
-        sort,
-      });
-
-      res.status(200).json({ users, totalCounts });
-    } catch (err) {
-      res.status(404).json({ message: err.message });
-    }
-  };
 
   static getUserFriends = async (req, res) => {
     try {
       const { _id: authUserId } = req.user;
       const { userId } = req.params;
 
-      const user = await User.findById(userId);
-
-      if (!user) return res.status(404).json({ message: "No found user" });
-
-      const friends = await Friend.findOne({ userId }).populate(
-        "friends.friendId",
-        "_id, firstName lastName location occupation picturePath"
-      );
-
-      const [userFriends, authUserFriends] = await Promise.all([
-        Friend.findOne({ userId }).populate(
-          "friends.friendId",
-          "_id, firstName lastName location occupation picturePath"
-        ),
-        Friend.findOne({ userId: authUserId }).populate(
-          "friends.friendId",
-          "_id, firstName lastName location occupation picturePath"
-        ),
-      ]);
+      const { userFriends, authUserFriends } = await UserService.getUserFriend({
+        userId,
+        authUserId,
+      });
 
       res.status(200).json({ userFriends, authUserFriends });
-    } catch (err) {
-      res.status(404).json({ error: err.message });
+    } catch (e) {
+      res.status(404).json({ error: e.message });
     }
   };
 
@@ -106,36 +85,12 @@ class UserController {
       const { _id: authUserId } = req.user;
       const { userId, friendId } = req.params;
 
-      const friend = await Friend.findOne({ userId });
-
-      console.log("this is console", userId, friend);
-
-      const friendIndex = friend.friends.findIndex(
-        (friend) => friend.friendId == friendId
-      );
-
-      if (friendIndex === -1) {
-        friend.friends.push({ friendId });
-        await friend.save();
-      } else {
-        friend.friends.splice(friendIndex, 1);
-        await friend.save();
-      }
-
-      const [userFriends, authUserFriends] = await Promise.all([
-        Friend.findOne({ userId: friendId }).populate(
-          "friends.friendId",
-          "_id, firstName lastName location occupation picturePath"
-        ),
-        Friend.findOne({ userId: authUserId }).populate(
-          "friends.friendId",
-          "_id, firstName lastName location occupation picturePath"
-        ),
-      ]);
+      const { userFriends, authUserFriends } =
+        await UserService.addRemoveFriend({ userId, friendId, authUserId });
 
       res.status(200).json({ userFriends, authUserFriends });
-    } catch (err) {
-      res.status(404).json({ error: err.message });
+    } catch (e) {
+      res.status(404).json({ error: e.message });
     }
   };
 }

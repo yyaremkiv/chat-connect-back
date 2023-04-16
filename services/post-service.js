@@ -38,7 +38,20 @@ class PostService {
     return { posts: limitedPosts, totalCounts };
   };
 
-  static addNewPost = async ({ userId, description, picturePath }) => {
+  static addNewPost = async ({
+    userId,
+    description,
+    file,
+    skip,
+    limit,
+    sort,
+  }) => {
+    let picturePath = "";
+
+    if (file) {
+      picturePath = await CloudService.addFileCloud(file);
+    }
+
     const newPost = new Post({
       author: userId,
       description,
@@ -48,25 +61,67 @@ class PostService {
     });
     await newPost.save();
 
-    return newPost;
+    const { posts, totalCounts } = await this.listPosts({ skip, limit, sort });
+
+    return { posts, totalCounts };
   };
 
-  static updatePost = async ({ userId, description, picturePath }) => {
-    return null;
+  static updatePost = async ({ postId, file, textPost, deletePhoto }) => {
+    const post = await Post.findById(postId);
+    let updatedPost;
+
+    if (file) {
+      if (post.picturePath) {
+        await CloudService.deleteFileCloud(post.picturePath);
+      }
+      const publicUrl = await CloudService.addFileCloud(file);
+      updatedPost = await Post.findByIdAndUpdate(
+        postId,
+        { picturePath: publicUrl, description: textPost },
+        { new: true }
+      ).populate(authorQuery);
+    }
+
+    if (!file && deletePhoto === "true") {
+      await CloudService.deleteFileCloud(post.picturePath);
+
+      updatedPost = await Post.findByIdAndUpdate(
+        postId,
+        { description: textPost, picturePath: "" },
+        { new: true }
+      ).populate(authorQuery);
+    }
+
+    if (!file && deletePhoto === "false") {
+      updatedPost = await Post.findByIdAndUpdate(
+        postId,
+        { description: textPost },
+        { new: true }
+      ).populate(authorQuery);
+    }
+
+    updatedPost.commentsCount = post.comments.length;
+    updatedPost.comments = [];
+
+    return updatedPost;
   };
 
   static deleteOnePost = async ({ postId }) => {
     const post = await Post.findById(postId);
 
+    if (!post) throw new Error(`Post with Id ${postId} not found`);
+
     if (post.picturePath) {
       await CloudService.deleteFileCloud(post.picturePath);
     }
-
     await Post.findByIdAndDelete(postId);
   };
 
   static patchLikePost = async ({ postId, userId }) => {
     const post = await Post.findById(postId);
+
+    if (!post) throw new Error(`Post with Id ${postId} not found`);
+
     const isLiked = post.likes.get(userId);
 
     if (isLiked) {
@@ -75,7 +130,7 @@ class PostService {
       post.likes.set(userId, true);
     }
 
-    const updatePost = await Post.findByIdAndUpdate(
+    const updatedPost = await Post.findByIdAndUpdate(
       postId,
       { likes: post.likes },
       { new: true }
@@ -83,20 +138,19 @@ class PostService {
       .populate(authorQuery)
       .populate(commentsQuery);
 
-    return updatePost;
+    return updatedPost;
   };
 
   static fetchComments = async ({ postId, skip, limit, sort, isLoadMore }) => {
-    console.log(postId, skip, limit, sort, isLoadMore);
     const post = await Post.findById(postId)
       .select("-__v")
       .populate(authorQuery)
       .populate(commentsQuery);
 
+    post.commentsCount = post.comments.length;
     post.comments.sort((a, b) =>
       sort === "desc" ? a.created - b.created : b.created - a.created
     );
-    post.commentsCount = post.comments.length;
     if (post.comments.length > limit) {
       post.comments = post.comments.slice(skip, skip + limit);
     }
@@ -104,13 +158,20 @@ class PostService {
     return post;
   };
 
-  static addComment = async ({ userId, postId, text, skip, limit, sort }) => {
+  static addComment = async ({
+    userId,
+    postId,
+    commentText,
+    skip,
+    limit,
+    sort,
+  }) => {
     const comment = {
       id: uuidv4(),
       author: userId,
       created: new Date(),
       updated: new Date(),
-      text,
+      text: commentText,
     };
 
     const updatedPost = await Post.findByIdAndUpdate(
@@ -121,10 +182,10 @@ class PostService {
       .populate(authorQuery)
       .populate(commentsQuery);
 
+    updatedPost.commentsCount = updatedPost.comments.length;
     updatedPost.comments.sort((a, b) =>
       sort === "desc" ? a.created - b.created : b.created - a.created
     );
-    updatedPost.commentsCount = updatedPost.comments.length;
     if (updatedPost.comments.length > limit) {
       updatedPost.comments = updatedPost.comments.slice(skip, skip + limit);
     }
@@ -132,60 +193,44 @@ class PostService {
     return updatedPost;
   };
 
-  static updateComment = async ({
-    postId,
-    commentId,
-    text,
-    skip,
-    limit,
-    sort,
-  }) => {
-    const post = await Post.findById(postId);
-
-    const newComments = post.comments.map((comment) => {
-      if (comment.id === commentId) {
-        comment.text = text;
-        comment.updated = new Date();
-      }
-      return comment;
-    });
-
-    const updatedPost = await Post.findByIdAndUpdate(
-      postId,
-      { comments: newComments },
+  static updateComment = async ({ postId, commentId, commentText }) => {
+    const updatedPost = await Post.findOneAndUpdate(
+      { _id: postId, "comments.id": commentId },
+      {
+        $set: {
+          "comments.$.text": commentText,
+          "comments.$.updated": new Date(),
+        },
+      },
       { new: true }
-    )
-      .populate(authorQuery)
-      .populate(commentsQuery);
+    ).populate(commentsQuery);
 
-    updatedPost.comments.sort((a, b) =>
-      sort === "desc" ? a.created - b.created : b.created - a.created
+    const updatedComment = updatedPost?.comments.find(
+      (comment) => comment.id === commentId
     );
-    updatedPost.commentsCount = updatedPost.comments.length;
-    if (updatedPost.comments.length > limit) {
-      updatedPost.comments = updatedPost.comments.slice(skip, skip + limit);
-    }
 
-    return updatedPost;
+    if (!updatedPost || !updatedComment)
+      throw new Error(`Comment with Id ${commentId} not found`);
+
+    return updatedComment;
   };
 
   static deleteComment = async ({ postId, commentId, skip, limit, sort }) => {
-    const post = await Post.findById(postId);
-
-    const newComments = post.comments.filter((item) => item.id !== commentId);
-
     const updatedPost = await Post.findByIdAndUpdate(
       postId,
-      { comments: newComments },
+      { $pull: { comments: { id: commentId } } },
       { new: true }
     )
       .populate(authorQuery)
       .populate(commentsQuery);
 
+    if (!updatedPost) throw new Error(`Post with Id ${postId} not found`);
+
+    updatedPost.commentsCount = updatedPost.comments.length;
     updatedPost.comments.sort((a, b) =>
       sort === "desc" ? a.created - b.created : b.created - a.created
     );
-    updatedPost.commentsCount = updatedPost.comments.length;
+
     if (updatedPost.comments.length > limit) {
       updatedPost.comments = updatedPost.comments.slice(skip, skip + limit);
     }

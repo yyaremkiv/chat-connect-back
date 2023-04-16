@@ -17,9 +17,7 @@ class TokenService {
 
   static validateAccessToken(token) {
     try {
-      console.log("token", token);
       const userData = jwt.verify(token, process.env.JWT_ACCESS_SECRET);
-      console.log("userData", userData);
       return userData;
     } catch (e) {
       return null;
