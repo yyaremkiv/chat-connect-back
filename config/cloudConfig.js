@@ -1,6 +1,6 @@
 const cloudConfig = {
   publicImagePath: (bucketName, fileName) =>
-    `https://storage.cloud.google.com/${bucketName}/${fileName}`,
+    `https://storage.googleapis.com/${bucketName}/${fileName}`,
   publicImagePathDefault:
     "https://storage.googleapis.com/chat-connect/avatar/no-user-image.jpg",
   publicToPrivatePath: (fileName) => {
