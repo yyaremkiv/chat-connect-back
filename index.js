@@ -11,9 +11,11 @@ import postRoutes from "./routes/posts.js";
 import cookieParser from "cookie-parser";
 import { Storage } from "@google-cloud/storage";
 import errorMiddleware from "./middleware/error-middleware.js";
+dotenv.config();
 
 const STORAGE_CLIENT_EMAIL = process.env.STORAGE_CLIENT_EMAIL;
 const STORAGE_PRIVATE_KEY = process.env.STORAGE_PRIVATE_KEY;
+console.log("this is console", STORAGE_CLIENT_EMAIL, STORAGE_PRIVATE_KEY);
 
 const app = express();
 app.use(express.json());
@@ -21,7 +23,6 @@ app.use(cookieParser());
 app.use(helmet());
 app.use(helmet.crossOriginResourcePolicy({ policy: "cross-origin" }));
 app.use(morgan("common"));
-dotenv.config();
 app.use(bodyParser.json({ limit: "15mb", extended: true }));
 app.use(bodyParser.urlencoded({ limit: "15mb", extended: true }));
 app.use(
