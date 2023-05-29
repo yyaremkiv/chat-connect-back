@@ -15,7 +15,7 @@ dotenv.config();
 
 const STORAGE_CLIENT_EMAIL = process.env.STORAGE_CLIENT_EMAIL;
 const STORAGE_PRIVATE_KEY = process.env.STORAGE_PRIVATE_KEY;
-console.log("this is console", STORAGE_CLIENT_EMAIL, STORAGE_PRIVATE_KEY);
+const STORAGE_PROJECT_ID = process.env.STORAGE_PROJECT_ID;
 
 const app = express();
 app.use(express.json());
@@ -33,7 +33,7 @@ app.use(
 );
 
 export const storage = new Storage({
-  projectId: process.env.STORAGE_PROJECT_ID,
+  projectId: STORAGE_PROJECT_ID,
   credentials: {
     client_email: STORAGE_CLIENT_EMAIL,
     private_key: STORAGE_PRIVATE_KEY,
