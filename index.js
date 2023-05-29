@@ -5,7 +5,6 @@ import cors from "cors";
 import dotenv from "dotenv";
 import helmet from "helmet";
 import morgan from "morgan";
-import path from "path";
 import authRoutes from "./routes/auth.js";
 import userRoutes from "./routes/user.js";
 import postRoutes from "./routes/posts.js";
@@ -30,8 +29,11 @@ app.use(
 );
 
 export const storage = new Storage({
-  projectId: "your-project-id",
-  keyFilename: path.resolve("./gcp.json"),
+  projectId: process.env.STORAGE_PROJECT_ID,
+  credentials: {
+    client_email: process.env.STORAGE_CLIENT_EMAIL,
+    private_key: process.env.STORAGE_PRIVATE_KEY,
+  },
 });
 
 app.use("/", authRoutes);
